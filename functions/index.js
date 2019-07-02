@@ -1,12 +1,12 @@
 const functions = require('firebase-functions');
 const admin  = require('firebase-admin');
 const CSVToJSON = require('csvtojson');
-const JSONToCSV = require('json2csv');
+const JSONToCSV = require('json2csv').parse;
 const FileSystem = require('fs')
 
 admin.initializeApp()
 
-const toUpperCase = (string) => string.toUpperCase()
+
 
 exports.addMessage = functions.https.onRequest((request, response) => {
     const username = request.query.username
@@ -35,17 +35,23 @@ exports.getMessage = functions.https.onRequest((request, response) => {
 
     ref.on("value", function(snapshot){
         
-      const data = snapshot.val()
-     
-       CSVToJSON().fromFile("./source.csv").then(source => {
+        const data = snapshot.val()
+        CSVToJSON().fromFile('./source.csv').then(source => {
+            source.push({
+                "sku": "34890",
+                "title": "Fortnite",
+                "hardware": "Nintendo Switch",
+                "price": "00.00"
+            });
+           // var csv = JSONToCSV(source, { fields: ["sku", "title", "hardware", "price" ]});
+           // FileSystem.writeFileSync("./destination.csv", csv);
 
-          source.push(data)
-          response.send(source)
-          return null
-      }).catch(error => {
-          response.status(500).send(error)
-      })
-     
+            response.send(source)
+            return null
+
+        }).catch(error => {
+            response.status(500).send(error)
+        })
 
     }, function (error) {
         console.log("Error: " + error.code);
