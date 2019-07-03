@@ -2,9 +2,12 @@ const functions = require('firebase-functions');
 const admin  = require('firebase-admin');
 const CSVToJSON = require('csvtojson');
 const JSONToCSV = require('json2csv').parse;
-const FileSystem = require('fs')
-
-admin.initializeApp()
+const FileSystem = require('fs');
+const serviceAccount = require('./key.json');
+admin.initializeApp({
+    credential : admin.credential.cert(serviceAccount),
+    databaseURL :"https://fir-js-29865.firebaseio.com/"
+})
 
 
 
@@ -36,17 +39,12 @@ exports.getMessage = functions.https.onRequest((request, response) => {
     ref.on("value", function(snapshot){
         
         const data = snapshot.val()
-        CSVToJSON().fromFile('./source.csv').then(source => {
-            source.push({
-                "sku": "34890",
-                "title": "Fortnite",
-                "hardware": "Nintendo Switch",
-                "price": "00.00"
-            });
+        CSVToJSON().fromFile('./Book1.csv').then(source => {
+          
            // var csv = JSONToCSV(source, { fields: ["sku", "title", "hardware", "price" ]});
            // FileSystem.writeFileSync("./destination.csv", csv);
 
-            response.send(source)
+            response.send(data)
             return null
 
         }).catch(error => {
