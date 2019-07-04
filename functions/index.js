@@ -46,20 +46,26 @@ exports.getMessage = functions.https.onRequest((request, response) => {
     const ref = admin.database().ref().child('users')
     ref.on("value", function(snapshot){
         const data = snapshot.val()
+        const users = [];
+      
         
         CSVToJSON().fromFile('./source.csv').then(source => {
-            
+
             for(const key in data){
-                source.push(data[key])
+                const newObject = Object.assign({}, data[key], {idUser:key});
+                source.push(newObject)
             }
-             var csv = JSONToCSV(source, { fields: ["email","username"]});
+             var csv = JSONToCSV(source, { fields : ["email","username","idUser"]});
              FileSystem.writeFileSync("./destination.csv", csv);
+
              response.send(source)
              return null
  
          }).catch(error => {
              response.status(500).send(error)
          })
+        
+      
     })
 
  
@@ -98,5 +104,43 @@ exports.getMessage = functions.https.onRequest((request, response) => {
     }, function (error) {
         console.log("Error: " + error.code);
     })
+
+     CSVToJSON().fromFile('./source.csv').then(source => {
+            
+            for(const key in data){
+                source.push(data[key])
+            }
+             var csv = JSONToCSV(source, { fields: ["email","username"]});
+             FileSystem.writeFileSync("./destination.csv", csv);
+
+             response.send(source)
+             return null
+ 
+         }).catch(error => {
+             response.status(500).send(error)
+         })
+
+           CSVToJSON().fromFile('./source.csv').then(source => {
+            for(const key in data){
+                source.push(data[key])
+            }
+             var csv = JSONToCSV(source, { fields : ["email","username"]});
+             FileSystem.writeFileSync("./destination.csv", csv);
+
+             response.send(source)
+             return null
+ 
+         }).catch(error => {
+             response.status(500).send(error)
+         })
+
+           
+        for(const key in data){
+           const newObject = Object.assign({}, data[key], {id:key});
+           users.push(newObject)
+           for(const key in users){
+                user.push(users[key])
+           }
+        }
 
          */
