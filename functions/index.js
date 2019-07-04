@@ -10,11 +10,20 @@ admin.initializeApp({
 })
 
 
+function json2array(json){
+    var result = [];
+    var keys = Object.keys(json);
+    keys.forEach(function(key){
+        result.push(json[key]);
+    });
+    return result;
+}
+
 
 exports.addMessage = functions.https.onRequest((request, response) => {
     const username = request.query.username
     const email =request.query.email
-    //const secretText = toUpperCase(text)
+ 
 
     admin
         .database()
@@ -34,9 +43,44 @@ exports.addMessage = functions.https.onRequest((request, response) => {
 })
 
 exports.getMessage = functions.https.onRequest((request, response) => {
-    const ref = admin.database().ref();
-
+    const ref = admin.database().ref().child('users')
     ref.on("value", function(snapshot){
+        const data = snapshot.val()
+        
+        CSVToJSON().fromFile('./source.csv').then(source => {
+            
+            for(const key in data){
+                source.push(data[key])
+            }
+             var csv = JSONToCSV(source, { fields: ["email","username"]});
+             FileSystem.writeFileSync("./destination.csv", csv);
+             response.send(source)
+             return null
+ 
+         }).catch(error => {
+             response.status(500).send(error)
+         })
+    })
+
+ 
+})
+
+
+
+
+ /**
+           const messages = snapshot.val()
+        const keys = Object.keys(messages)
+
+        response.json(keys) --
+
+        for( i = 0 ; i<= keys.length; i++){
+            const k = keys[i];
+            const message = messages[k].message
+            response.send(message)
+        }
+        //this line convert data to csv
+           ref.on("value", function(snapshot){
         
         const data = snapshot.val()
         CSVToJSON().fromFile('./Book1.csv').then(source => {
@@ -54,18 +98,5 @@ exports.getMessage = functions.https.onRequest((request, response) => {
     }, function (error) {
         console.log("Error: " + error.code);
     })
-})
-
- /**
-           const messages = snapshot.val()
-        const keys = Object.keys(messages)
-
-        response.json(keys)
-
-        for( i = 0 ; i<= keys.length; i++){
-            const k = keys[i];
-            const message = messages[k].message
-            response.send(message)
-        }
 
          */
