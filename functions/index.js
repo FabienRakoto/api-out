@@ -4,7 +4,7 @@ const CSVToJSON = require('csvtojson');
 const JSONToCSV = require('json2csv').parse;
 const FileSystem = require('fs');
 const serviceAccount = require('./key.json');
-
+const PromiseFtp = require('promise-ftp');
 admin.initializeApp({
     credential : admin.credential.cert(serviceAccount),
     databaseURL :"https://fir-js-29865.firebaseio.com/"
@@ -65,5 +65,44 @@ exports.addUser = functions.https.onRequest((request, response) => {
          response.status(500).send(error)
      })
 
+})
+
+exports.verifyUser = functions.https.onRequest((request, response) => {
+    db.collection("users").get().then( snapshot => {
+        snapshot.forEach(doc => {
+            const key = doc.id;
+            db.collection("users").doc(""+doc.id+"").get()
+            .then(snap => {
+
+                CSVToJSON().fromFile('./add.csv').then(source => {
+                    for(const key in source){
+                        if(JSON.stringify(source[key])==JSON.stringify(snap.data())){
+                           console.log("mitovy")
+                        }else{
+                            console.log(snap.data(), "\n", source[key])
+                            console.log("tsy mitovy")
+                        }
+                    }
+
+                })
+            }).catch(error => {
+                response.status(500).send(error)
+            })
+        }) 
+        return null
+    }).catch(error => {
+        response.status(500).send(error)
+    })
+})
+
+exports.configFtp = functions.https.onRequest((request, response) => {
+    var ftp = new PromiseFtp();
+    ftp.connect({host: "198.50.210.81", user: "iziweb", password: "izi2014z"})
+    .then(function (serverMessage) {
+        response.send(serverMessage)
+        return ftp.put('./destination.csv', '/kaylandko');
+      }).then(function () {
+        return ftp.end();
+      });
 })
 
