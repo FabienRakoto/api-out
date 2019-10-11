@@ -5,10 +5,13 @@ const JSONToCSV = require('json2csv').parse;
 const FileSystem = require('fs');
 const serviceAccount = require('./key.json');
 const FtpDeploy = require('ftp-deploy')
+const _ = require('lodash');
+const PromiseFtp = require('promise-ftp');
 admin.initializeApp({
     credential : admin.credential.cert(serviceAccount),
     databaseURL :"https://fir-js-29865.firebaseio.com/"
 })
+
 
 const config  = {
     user: "iziweb",                   // NOTE that this was username in 1.x 
@@ -85,30 +88,50 @@ exports.addUser = functions.https.onRequest((request, response) => {
 })
 
 exports.verifyUser = functions.https.onRequest((request, response) => {
-    db.collection("users").get().then( snapshot => {
-        snapshot.forEach(doc => {
-            const key = doc.id;
-            db.collection("users").doc(""+doc.id+"").get()
-            .then(snap => {
+    //GET FILE ON THE FTP
+    
+    const ftp = new PromiseFtp();
+    ftp.connect({host:"198.50.210.81", user:"iziweb", password:"izi2014z"})
+        .then(serverMessage => {
+            return ftp.get("./csv-out/upload/down.csv")
+        }).then(stream => {
+            return new Promise ((resolve, reject) =>{
+                stream.once('close', resolve)
+                stream.once('error', reject)
+                stream.pipe(FileSystem.createWriteStream("./download/down.csv"));
+            });
+        }).then(function(){
+            return ftp.end()
+        })
 
-                CSVToJSON().fromFile('./add.csv').then(source => {
-                    for(const key in source){
-                        if(JSON.stringify(source[key])==JSON.stringify(snap.data())){
-                           console.log("mitovy")
-                        }else{
-                            console.log(snap.data(), "\n", source[key])
-                            console.log("tsy mitovy")
-                        }
-                    }
+    //COMPARE DATA ON CSV WITH FIREBASE
+    
 
-                })
-            }).catch(error => {
-                response.status(500).send(error)
-            })
-        }) 
-        return null
-    }).catch(error => {
-        response.status(500).send(error)
-    })
+
 })
 
+// db.collection("users").get().then( snapshot => {
+//     snapshot.forEach(doc => {
+//         const keys = doc.id;
+//         db.collection("users").doc(""+keys+"").get()
+//         .then(snap => {
+
+//             CSVToJSON().fromFile('./add.csv').then(source => {
+//                 for(const key in source){
+//                     if(_.isEqual(source[key], snap.data())){
+//                        console.log("mitovy")
+//                     }else{
+//                         console.log(snap.data(), "\n", source[key])
+//                         console.log("tsy mitovy")
+//                     }
+//                 }
+
+//             })
+//         }).catch(error => {
+//             response.status(500).send(error)
+//         })
+//     }) 
+//     return null
+// }).catch(error => {
+//     response.status(500).send(error)
+// })
